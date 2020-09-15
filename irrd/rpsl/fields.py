@@ -59,7 +59,6 @@ class RPSLTextField:
     """
     keep_case = True
     extracts = []
-    graphql_type = 'String'
 
     def __init__(self, optional: bool=False, multiple: bool=False, primary_key: bool=False, lookup_key: bool=False) -> None:
         self.optional = optional
@@ -82,8 +81,6 @@ class RPSLFieldListMixin:
         class RPSLASNumbersField(RPSLFieldListMixin, RPSLASNumberField):
             pass
     """
-    graphql_type = '[String]'
-
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         parse_results = []
         for single_value in value.split(','):
@@ -277,7 +274,7 @@ class RPSLRouteSetMembersField(RPSLFieldListMixin, RPSLRouteSetMemberField):
 
 class RPSLASNumberField(RPSLTextField):
     """Field for a single AS number (in ASxxxx syntax)."""
-    extracts = ['asn_first', 'asn_last']
+    extracts = ['asn']
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         try:

@@ -133,6 +133,12 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
                 self.columns.object_text,
                 self.columns.source,
                 self.columns.rpki_status,
+                self.columns.updated,
+                self.columns.asn_first,
+                self.columns.asn_last,
+                self.columns.ip_first,
+                self.columns.ip_last,
+                self.columns.prefix_length,
             ]
         else:
             columns = [self.columns.get(name) for name in column_names]

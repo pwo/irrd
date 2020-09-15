@@ -68,3 +68,11 @@ def split_paragraphs_rpsl(input: Union[str, TextIO], strip_comments=True) -> Ite
 
     if current_paragraph.strip():
         yield current_paragraph
+
+
+def to_camel_case(snake_str):
+    components = snake_str.replace('_', '-').split('-')
+    # We capitalize the first letter of each component except the first one
+    # with the 'title' method and join them together.
+    return components[0] + ''.join(x.title() for x in components[1:])
+
