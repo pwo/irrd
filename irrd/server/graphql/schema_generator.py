@@ -68,8 +68,8 @@ class SchemaGenerator:
 
     def _set_lookup_params(self):
         params = lookup_field_names()
-        params.add('rpslPk')
-        self.lookup_params = ', '.join([to_camel_case(p) + ': String' for p in params])
+        params.update({'rpslPK', 'sources', 'objectClass'})
+        self.lookup_params = ', '.join([to_camel_case(p) + ': [String]' for p in params])
 
     def _set_rpsl_object_interface_schema(self):
         common_fields = None
@@ -83,6 +83,7 @@ class SchemaGenerator:
         common_field_dict = OrderedDict()
         for field in common_fields:
             try:
+                # These fields are present in every object, so this is a safe check
                 graphql_type = self._graphql_type_for_rpsl_field(RPSLAsBlock.fields[field])
             except KeyError:
                 graphql_type = 'String'
