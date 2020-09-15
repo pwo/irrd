@@ -26,6 +26,7 @@ def resolve_query_rpsl_objects(_, info, **kwargs):
     print(kwargs)
     attribute, value = list(kwargs.items())[0]
     for row in qr.rpsl_attribute_search(attribute.replace('_', '-'), value):
+        # TODO: try to restrict retrieved columns on what was requested
         graphql_result = dict(
             objectClass=row['object_class'],
             rpslPk=row['rpsl_pk'],
@@ -48,3 +49,9 @@ def resolve_query_rpsl_objects(_, info, **kwargs):
                 value = '\n'.join(value)
             graphql_result[to_camel_case(key)] = value
         yield graphql_result
+
+
+def resolve_database_status(_, info, source=None):
+    for name, data in qr.database_status(sources=source).items():
+        data['source'] = name
+        yield data

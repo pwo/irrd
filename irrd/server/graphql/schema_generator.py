@@ -15,15 +15,33 @@ class SchemaGenerator:
         self._set_rpsl_object_schemas()
 
         schema = f"""
+            scalar ASN
+
             schema {{
               query: Query
             }}
 
 
             type Query {{
+              databaseStatus(source: [String]): [DatabaseStatus]
               rpslObjects({self.lookup_params}): [RPSLObject]
               originated(origins: [Int]): [Originated]
             }}
+
+            type DatabaseStatus {{
+                source: String
+                authoritative: Boolean
+                object_class_filter: [String]
+                rpki_rov_filter: Boolean
+                scopefilter_enabled: Boolean
+                local_journal_kept: Boolean
+                serial_oldest_journal: Int
+                serial_newest_journal: Int
+                serial_last_export: Int
+                serial_newest_mirror: Int
+                last_update: String
+                synchronised_serials: Boolean
+            }}           
 
             type Originated {{
                 origin: Int
@@ -32,7 +50,6 @@ class SchemaGenerator:
         """
         schema += self.rpsl_object_interface_schema
         schema += ''.join(self.rpsl_object_schemas.values())
-        print(schema)
 
         self.type_defs = ariadne.gql(schema)
 
@@ -62,7 +79,7 @@ class SchemaGenerator:
             else:
                 common_fields = common_fields.intersection(set(rpsl_object_class.fields.keys()))
         common_fields = list(common_fields)
-        common_fields = ['rpslPk', 'objectClass', 'rpslText'] + common_fields
+        common_fields = ['rpslPk', 'objectClass', 'rpslText', 'updated'] + common_fields
         common_field_dict = OrderedDict()
         for field in common_fields:
             try:
@@ -82,12 +99,13 @@ class SchemaGenerator:
             fields['rpslPk'] = 'String'
             fields['objectClass'] = 'String'
             fields['rpslText'] = 'String'
+            fields['updated'] = 'String'
             for name, field in klass.fields.items():
                 graphql_type = self._graphql_type_for_rpsl_field(field)
                 fields[to_camel_case(name)] = graphql_type
                 self.graphql_types[object_class][name] = graphql_type
             for name in klass.field_extracts:
-                graphql_type = 'Int' if name.startswith('asn') else 'String'
+                graphql_type = 'ASN' if name.startswith('asn') else 'String'
                 fields[to_camel_case(name)] = graphql_type
             if klass.rpki_relevant:
                 fields['rpkiStatus'] = 'String'

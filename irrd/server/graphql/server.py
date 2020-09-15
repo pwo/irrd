@@ -1,7 +1,8 @@
 from ariadne import make_executable_schema
 from ariadne.asgi import GraphQL
 
-from .query_resolvers import resolve_query_rpsl_objects, resolve_rpsl_object_type
+from .resolvers import (resolve_query_rpsl_objects, resolve_rpsl_object_type,
+                        resolve_database_status)
 from .schema_generator import SchemaGenerator
 
 schema = SchemaGenerator()
@@ -9,6 +10,7 @@ schema = SchemaGenerator()
 
 schema.rpsl_object_type.set_type_resolver(resolve_rpsl_object_type)
 schema.query_type.set_field("rpslObjects", resolve_query_rpsl_objects)
+schema.query_type.set_field("databaseStatus", resolve_database_status)
 
 
 @schema.query_type.field("originated")
