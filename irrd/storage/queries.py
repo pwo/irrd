@@ -330,7 +330,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         return self
 
     def __repr__(self):
-        return f'RPSLDatabaseQuery: {self.statement}\nPARAMS: {self.statement.compile().params}'
+        return f'{self.statement}\nPARAMS: {self.statement.compile().params}'
 
 
 class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):

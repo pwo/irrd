@@ -67,9 +67,10 @@ class SchemaGenerator:
         self.object_types.append(ariadne.ObjectType("Originated"))
 
     def _set_lookup_params(self):
-        params = lookup_field_names()
-        params.update({'rpslPK', 'sources', 'objectClass'})
-        self.lookup_params = ', '.join([to_camel_case(p) + ': [String]' for p in params])
+        names = {'rpslPK', 'sources', 'objectClass'}.union(lookup_field_names())
+        params = [to_camel_case(p) + ': [String]' for p in names]
+        params += ['sqlDebug: Boolean']
+        self.lookup_params = ', '.join(params)
 
     def _set_rpsl_object_interface_schema(self):
         common_fields = None
