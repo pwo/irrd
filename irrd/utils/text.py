@@ -1,5 +1,5 @@
 import re
-from typing import Iterator, Union, TextIO, Optional
+from typing import Iterator, Union, TextIO, Optional, List, Set
 
 from irrd.conf import PASSWORD_HASH_DUMMY_VALUE
 from irrd.rpsl.config import PASSWORD_HASHERS
@@ -70,9 +70,12 @@ def split_paragraphs_rpsl(input: Union[str, TextIO], strip_comments=True) -> Ite
         yield current_paragraph
 
 
-def to_camel_case(snake_str):
-    components = snake_str.replace('_', '-').split('-')
-    # We capitalize the first letter of each component except the first one
-    # with the 'title' method and join them together.
-    return components[0] + ''.join(x.title() for x in components[1:])
+def to_camel_case(snake: Union[Set[str], List[str], str]):
+    def _str_to_camel_case(snake_str: str):
+        components = snake_str.replace('_', '-').split('-')
+        return components[0] + ''.join(x.title() for x in components[1:])
+
+    if isinstance(snake, (set, list)):
+        return [_str_to_camel_case(s) for s in snake]
+    return _str_to_camel_case(snake)
 

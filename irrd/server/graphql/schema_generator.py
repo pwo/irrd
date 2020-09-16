@@ -25,9 +25,9 @@ class SchemaGenerator:
 
 
             type Query {{
-              databaseStatus(source: [String]): [DatabaseStatus]
               rpslObjects({self.lookup_params}): [RPSLObject]
-              originated(origins: [Int]): [Originated]
+              databaseStatus(sources: [String]): [DatabaseStatus]
+              originatedPrefixes(origins: [Int!]!, sources: [String]): [OriginatedPrefixes]
             }}
 
             type DatabaseStatus {{
@@ -45,8 +45,8 @@ class SchemaGenerator:
                 synchronised_serials: Boolean
             }}           
 
-            type Originated {{
-                origin: Int
+            type OriginatedPrefixes {{
+                asn: Int
                 prefixes: [String]
             }}
         """
@@ -69,7 +69,7 @@ class SchemaGenerator:
         for name in self.rpsl_object_schemas.keys():
             self.object_types.append(ariadne.ObjectType(name))
 
-        self.object_types.append(ariadne.ObjectType("Originated"))
+        self.object_types.append(ariadne.ObjectType("OriginatedPrefixes"))
 
     def _set_lookup_params(self):
         names = {'rpslPk', 'sources', 'objectClass'}.union(lookup_field_names())
@@ -85,7 +85,7 @@ class SchemaGenerator:
             else:
                 common_fields = common_fields.intersection(set(rpsl_object_class.fields.keys()))
         common_fields = list(common_fields)
-        common_fields = ['rpslPk', 'objectClass', 'rpslText', 'updated'] + common_fields
+        common_fields = ['rpslPk', 'objectClass', 'objectText', 'updated'] + common_fields
         common_field_dict = OrderedDict()
         for field_name in common_fields:
             try:
@@ -104,7 +104,7 @@ class SchemaGenerator:
 
     def _set_rpsl_contact_schema(self):
         common_fields = set(RPSLPerson.fields.keys()).intersection(set(RPSLRole.fields.keys()))
-        common_fields = common_fields.union({'rpslPk', 'objectClass', 'rpslText', 'updated'})
+        common_fields = common_fields.union({'rpslPk', 'objectClass', 'objectText', 'updated'})
         common_field_dict = OrderedDict()
         for field_name in common_fields:
             try:
@@ -129,7 +129,7 @@ class SchemaGenerator:
             graphql_fields = OrderedDict()
             graphql_fields['rpslPk'] = 'String'
             graphql_fields['objectClass'] = 'String'
-            graphql_fields['rpslText'] = 'String'
+            graphql_fields['objectText'] = 'String'
             graphql_fields['updated'] = 'String'
             for name, field in klass.fields.items():
                 graphql_type = self._graphql_type_for_rpsl_field(field)
