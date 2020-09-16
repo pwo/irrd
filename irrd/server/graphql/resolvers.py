@@ -55,66 +55,48 @@ def resolve_query_rpsl_objects(_, info, **kwargs):
 
 
 def resolve_rpsl_object_mnt_by_objs(rpsl_object, info):
-    source = rpsl_object['source']
-    mntners = rpsl_object.get('mntBy')
-    print(f'resolving {source} {mntners}')
-    if not mntners:
-        return
-    query = RPSLDatabaseQuery(column_names=_columns_for_fields(info), ordered_by_sources=False, enable_ordering=False)
-    query.sources([source]).object_classes(['mntner']).rpsl_pks(mntners)
-    return rpsl_db_query_to_graphql(query, info)
+    return _resolve_subquery(rpsl_object, info, ['mntner'], pk_field='mntBy')
 
 
 def resolve_rpsl_object_adminc_objs(rpsl_object, info):
-    source = rpsl_object['source']
-    contacts = rpsl_object.get('adminC')
-    if not contacts:
-        return
-    if not isinstance(contacts, list):
-        contacts = [contacts]
-    print(f'resolving {source} {contacts}')
-    query = RPSLDatabaseQuery(column_names=_columns_for_fields(info), ordered_by_sources=False, enable_ordering=False)
-    query.sources([source]).object_classes(['role', 'person']).rpsl_pks(contacts)
-    return rpsl_db_query_to_graphql(query, info)
+    return _resolve_subquery(rpsl_object, info, ['role', 'person'], pk_field='adminC')
+
+
+def resolve_rpsl_object_techc_objs(rpsl_object, info):
+    return _resolve_subquery(rpsl_object, info, ['role', 'person'], pk_field='techC')
+
+
+def resolve_rpsl_object_members_by_ref_objs(rpsl_object, info):
+    return _resolve_subquery(rpsl_object, info, ['mntner'], pk_field='mbrsByRef')
 
 
 def resolve_rpsl_object_member_of_objs(rpsl_object, info):
-    source = rpsl_object['source']
-    member_ofs = rpsl_object.get('memberOf')
-    if not member_ofs:
-        return
     object_klass = OBJECT_CLASS_MAPPING[rpsl_object['objectClass']]
     sub_object_classes = object_klass.fields['member-of'].referring
-    print(f'resolving {sub_object_classes} {source} {member_ofs}')
-    query = RPSLDatabaseQuery(column_names=None, ordered_by_sources=False, enable_ordering=False)
-    query.sources([source]).object_classes(sub_object_classes).rpsl_pks(member_ofs)
-    return rpsl_db_query_to_graphql(query, info)
-
-
-def resolve_rpsl_object_members_by_refobjs(rpsl_object, info):
-    source = rpsl_object['source']
-    mntners = rpsl_object.get('mbrsByRef')
-    print(f'resolving {source} {mntners}')
-    if not mntners:
-        return
-    query = RPSLDatabaseQuery(column_names=_columns_for_fields(info), ordered_by_sources=False, enable_ordering=False)
-    query.sources([source]).object_classes(['mntner']).rpsl_pks(mntners)
-    return rpsl_db_query_to_graphql(query, info)
+    return _resolve_subquery(rpsl_object, info, sub_object_classes, pk_field='memberOf')
 
 
 def resolve_rpsl_object_members_objs(rpsl_object, info):
-    members = rpsl_object.get('members')
     object_klass = OBJECT_CLASS_MAPPING[rpsl_object['objectClass']]
     sub_object_classes = object_klass.fields['members'].referring
     if 'aut-num' in sub_object_classes:
         sub_object_classes.remove('aut-num')
     if 'inet-rtr' in sub_object_classes:
         sub_object_classes.remove('inet-rtr')
-    print(f'resolving {sub_object_classes} {members}')
-    if not members:
+    return _resolve_subquery(rpsl_object, info, sub_object_classes, 'members', sticky_source=False)
+
+
+def _resolve_subquery(rpsl_object, info, object_classes, pk_field, sticky_source=True):
+    pks = rpsl_object.get(pk_field)
+    print(f'resolving {rpsl_object} into sub {object_classes} for {pk_field}: {pks}')
+    if not pks:
         return
+    if not isinstance(pks, list):
+        pks = [pks]
     query = RPSLDatabaseQuery(column_names=_columns_for_fields(info), ordered_by_sources=False, enable_ordering=False)
-    query.object_classes(sub_object_classes).rpsl_pks(members)
+    query.object_classes(object_classes).rpsl_pks(pks)
+    if sticky_source:
+        query.sources([rpsl_object['source']])
     return rpsl_db_query_to_graphql(query, info)
 
 

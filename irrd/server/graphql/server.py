@@ -7,10 +7,10 @@ from ariadne.types import Extension
 
 from .resolvers import (resolve_query_rpsl_objects, resolve_rpsl_object_type,
                         resolve_database_status, resolve_rpsl_object_mnt_by_objs,
-                        resolve_rpsl_object_member_of_objs, resolve_rpsl_object_members_by_refobjs,
+                        resolve_rpsl_object_member_of_objs, resolve_rpsl_object_members_by_ref_objs,
                         resolve_rpsl_object_members_objs, resolve_rpsl_object_adminc_objs,
                         resolve_asn_prefixes, resolve_as_set_prefixes,
-                        resolve_recursive_set_members)
+                        resolve_recursive_set_members, resolve_rpsl_object_techc_objs)
 from .schema_generator import SchemaGenerator
 
 schema = SchemaGenerator()
@@ -27,17 +27,20 @@ schema.query_type.set_field("recursiveSetMembers", resolve_recursive_set_members
 
 schema.rpsl_object_type.set_field("mntByObjs", resolve_rpsl_object_mnt_by_objs)
 for object_type in schema.object_types:
+    if 'adminCObjs' in schema.graphql_types[object_type.name]:
+        object_type.set_field("adminCObjs", resolve_rpsl_object_adminc_objs)
+for object_type in schema.object_types:
+    if 'techCObjs' in schema.graphql_types[object_type.name]:
+        object_type.set_field("techCObjs", resolve_rpsl_object_techc_objs)
+for object_type in schema.object_types:
+    if 'mbrsByRefObjs' in schema.graphql_types[object_type.name]:
+        object_type.set_field("mbrsByRefObjs", resolve_rpsl_object_members_by_ref_objs)
+for object_type in schema.object_types:
     if 'memberOfObjs' in schema.graphql_types[object_type.name]:
         object_type.set_field("memberOfObjs", resolve_rpsl_object_member_of_objs)
 for object_type in schema.object_types:
-    if 'mbrsByRefObjs' in schema.graphql_types[object_type.name]:
-        object_type.set_field("mbrsByRefObjs", resolve_rpsl_object_members_by_refobjs)
-for object_type in schema.object_types:
     if 'membersObjs' in schema.graphql_types[object_type.name]:
         object_type.set_field("membersObjs", resolve_rpsl_object_members_objs)
-for object_type in schema.object_types:
-    if 'adminCObjs' in schema.graphql_types[object_type.name]:
-        object_type.set_field("adminCObjs", resolve_rpsl_object_adminc_objs)
 
 
 class QueryMetadataExtension(Extension):
