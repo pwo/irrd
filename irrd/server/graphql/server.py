@@ -8,13 +8,14 @@ from ariadne.types import Extension
 from .resolvers import (resolve_query_rpsl_objects, resolve_rpsl_object_type,
                         resolve_database_status, resolve_rpsl_object_mnt_by_objs,
                         resolve_rpsl_object_member_of_objs, resolve_rpsl_object_members_by_refobjs,
-                        resolve_rpsl_object_members_objs)
+                        resolve_rpsl_object_members_objs, resolve_rpsl_object_adminc_objs)
 from .schema_generator import SchemaGenerator
 
 schema = SchemaGenerator()
 
 
 schema.rpsl_object_type.set_type_resolver(resolve_rpsl_object_type)
+schema.rpsl_contact_union_type.set_type_resolver(resolve_rpsl_object_type)
 schema.query_type.set_field("rpslObjects", resolve_query_rpsl_objects)
 schema.query_type.set_field("databaseStatus", resolve_database_status)
 schema.rpsl_object_type.set_field("mntByObjs", resolve_rpsl_object_mnt_by_objs)
@@ -27,6 +28,9 @@ for object_type in schema.object_types:
 for object_type in schema.object_types:
     if 'membersObjs' in schema.graphql_types[object_type.name]:
         object_type.set_field("membersObjs", resolve_rpsl_object_members_objs)
+for object_type in schema.object_types:
+    if 'adminCObjs' in schema.graphql_types[object_type.name]:
+        object_type.set_field("adminCObjs", resolve_rpsl_object_adminc_objs)
 
 
 class QueryMetadataExtension(Extension):

@@ -5,7 +5,7 @@ import ariadne
 
 from irrd.rpsl.fields import RPSLFieldListMixin, RPSLReferenceField
 from irrd.rpsl.rpsl_objects import lookup_field_names, OBJECT_CLASS_MAPPING, RPSLAsBlock, \
-    RPSLAutNum, RPSLInetRtr
+    RPSLAutNum, RPSLInetRtr, RPSLPerson, RPSLRole
 from irrd.utils.text import to_camel_case
 
 
@@ -13,6 +13,7 @@ class SchemaGenerator:
     def __init__(self):
         self._set_lookup_params()
         self._set_rpsl_object_interface_schema()
+        self._set_rpsl_contact_schema()
         self._set_rpsl_object_schemas()
 
         schema = f"""
@@ -50,7 +51,10 @@ class SchemaGenerator:
             }}
         """
         schema += self.rpsl_object_interface_schema
+        schema += self.rpsl_contact_schema
         schema += ''.join(self.rpsl_object_schemas.values())
+        schema += 'union RPSLContactUnion = RPSLPerson | RPSLRole'
+        print(schema)
 
         self.type_defs = ariadne.gql(schema)
 
@@ -59,8 +63,8 @@ class SchemaGenerator:
         self.object_types.append(self.query_type)
         self.rpsl_object_type = ariadne.InterfaceType("RPSLObject")
         self.object_types.append(self.rpsl_object_type)
-        # rpsl_data_type = UnionType("RPSLData")
-        # object_types.append(rpsl_data_type)
+        self.rpsl_contact_union_type = ariadne.UnionType("RPSLContactUnion")
+        self.object_types.append(self.rpsl_contact_union_type)
 
         for name in self.rpsl_object_schemas.keys():
             self.object_types.append(ariadne.ObjectType(name))
@@ -98,6 +102,25 @@ class SchemaGenerator:
         schema = self._generate_schema_str('RPSLObject', 'interface', common_field_dict)
         self.rpsl_object_interface_schema = schema
 
+    def _set_rpsl_contact_schema(self):
+        common_fields = set(RPSLPerson.fields.keys()).intersection(set(RPSLRole.fields.keys()))
+        common_fields = common_fields.union({'rpslPk', 'objectClass', 'rpslText', 'updated'})
+        common_field_dict = OrderedDict()
+        for field_name in common_fields:
+            try:
+                # These fields are present in both objects, so this is a safe check
+                rpsl_field = RPSLPerson.fields[field_name]
+                graphql_type = self._graphql_type_for_rpsl_field(rpsl_field)
+
+                reference_name, reference_type = self._grapql_type_for_reference_field(field_name, rpsl_field)
+                if reference_name and reference_type:
+                    common_field_dict[reference_name] = reference_type
+            except KeyError:
+                graphql_type = 'String'
+            common_field_dict[to_camel_case(field_name)] = graphql_type
+        schema = self._generate_schema_str('RPSLContact', 'interface', common_field_dict)
+        self.rpsl_contact_schema = schema
+
     def _set_rpsl_object_schemas(self):
         self.graphql_types = defaultdict(dict)
         schemas = OrderedDict()
@@ -123,12 +146,13 @@ class SchemaGenerator:
                 graphql_fields[to_camel_case(name)] = graphql_type
             if klass.rpki_relevant:
                 graphql_fields['rpkiStatus'] = 'String'
-            schema = self._generate_schema_str(object_name, 'type', graphql_fields, 'RPSLObject')
+            implements = 'RPSLContact & RPSLObject' if klass in [RPSLPerson, RPSLRole] else 'RPSLObject'
+            schema = self._generate_schema_str(object_name, 'type', graphql_fields, implements)
             schemas[object_name] = schema
         self.rpsl_object_schemas = schemas
 
     def _graphql_type_for_rpsl_field(self, field) -> str:
-        if RPSLFieldListMixin in field.__class__.__bases__:
+        if RPSLFieldListMixin in field.__class__.__bases__ or field.multiple:
             return '[String]'
         return 'String'
 
@@ -141,11 +165,11 @@ class SchemaGenerator:
                 grapql_referring.remove(RPSLAutNum)
             if RPSLInetRtr in grapql_referring:
                 grapql_referring.remove(RPSLInetRtr)
-            if len(grapql_referring) > 1:
-                print(f'ignoring {field_name} due to multiple refs: {grapql_referring}')
-                return None, None
-            grapql_type = '[' + grapql_referring.pop().__name__ + ']'
-            return graphql_name, grapql_type
+            if grapql_referring == {RPSLPerson, RPSLRole}:
+                graphql_type = '[RPSLContactUnion]'
+            else:
+                graphql_type = '[' + grapql_referring.pop().__name__ + ']'
+            return graphql_name, graphql_type
         return None, None
 
     def _generate_schema_str(self, name: str, graphql_type: str, fields: Dict[str, str], implements: Optional[str]=None) -> str:

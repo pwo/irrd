@@ -64,6 +64,19 @@ def resolve_rpsl_object_mnt_by_objs(rpsl_object, info):
     return rpsl_db_query_to_graphql(query, info)
 
 
+def resolve_rpsl_object_adminc_objs(rpsl_object, info):
+    source = rpsl_object['source']
+    contacts = rpsl_object.get('adminC')
+    if not contacts:
+        return
+    if not isinstance(contacts, list):
+        contacts = [contacts]
+    print(f'resolving {source} {contacts}')
+    query = RPSLDatabaseQuery(column_names=None, ordered_by_sources=False, enable_ordering=False)
+    query.sources([source]).object_classes(['role', 'person']).rpsl_pks(contacts)
+    return rpsl_db_query_to_graphql(query, info)
+
+
 def resolve_rpsl_object_member_of_objs(rpsl_object, info):
     source = rpsl_object['source']
     member_ofs = rpsl_object.get('memberOf')
@@ -119,7 +132,7 @@ def rpsl_db_query_to_graphql(query: RPSLDatabaseQuery, info):
             updated=row['updated'],
             source=row['source'],
             rpkiStatus=row['rpki_status'].name,
-            rpslText=row['object_text'],
+            # rpslText=row['object_text'],
             prefixLength=row['prefix_length'],
             asnFirst=row['asn_first'],
             asnLast=row['asn_last'],
