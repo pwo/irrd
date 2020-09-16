@@ -132,7 +132,7 @@ def rpsl_db_query_to_graphql(query: RPSLDatabaseQuery, info):
             updated=row['updated'],
             source=row['source'],
             rpkiStatus=row['rpki_status'].name,
-            # rpslText=row['object_text'],
+            rpslText=row['object_text'],
             prefixLength=row['prefix_length'],
             asnFirst=row['asn_first'],
             asnLast=row['asn_last'],

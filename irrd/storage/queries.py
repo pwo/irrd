@@ -130,7 +130,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
                 self.columns.object_class,
                 self.columns.rpsl_pk,
                 self.columns.parsed_data,
-                # self.columns.object_text,
+                self.columns.object_text,
                 self.columns.source,
                 self.columns.rpki_status,
                 self.columns.updated,
