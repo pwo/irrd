@@ -57,6 +57,8 @@ class QueryResolver:
         self.client_str = client_str
         self.preloader = preloader
         self.database_handler = database_handler
+        self.sql_queries = []
+        self.sql_trace = False
 
     def set_query_sources(self, sources: Optional[List[str]]) -> None:
         """Set the sources for future queries. If sources is None, default source list is set."""
@@ -79,11 +81,11 @@ class QueryResolver:
     def key_lookup(self, object_class: str, rpsl_pk: str) -> RPSLDatabaseResponse:
         """RPSL exact key lookup."""
         query = self._prepare_query().object_classes([object_class]).rpsl_pk(rpsl_pk).first_only()
-        return self.database_handler.execute_query(query)
+        return self._execute_query(query)
 
     def rpsl_text_search(self, value: str) -> RPSLDatabaseResponse:
         query = self._prepare_query(ordered_by_sources=False).text_search(value)
-        return self.database_handler.execute_query(query)
+        return self._execute_query(query)
 
     def route_search(self, address: IP, lookup_type: RouteLookupType):
         """Route(6) object search for an address, supporting exact/less/more specific."""
@@ -95,7 +97,7 @@ class QueryResolver:
             RouteLookupType.MORE_SPECIFIC_WITHOUT_EXACT: query.ip_more_specific,
         }
         query = lookup_queries[lookup_type](address)
-        return self.database_handler.execute_query(query)
+        return self._execute_query(query)
 
     def rpsl_attribute_search(self, attribute: str, value: str) -> RPSLDatabaseResponse:
         """
@@ -109,7 +111,7 @@ class QueryResolver:
                    f'only supported for attributes: {readable_lookup_field_names}')
             raise InvalidQueryException(msg)
         query = self._prepare_query(ordered_by_sources=False).lookup_attr(attribute, value)
-        return self.database_handler.execute_query(query)
+        return self._execute_query(query)
 
     def routes_for_origin(self, origin: str, ip_version: Optional[int]=None) -> Set[str]:
         """
@@ -232,7 +234,7 @@ class QueryResolver:
             object_classes = [self._current_set_root_object_class]
 
         query = query.object_classes(object_classes).rpsl_pks(set_names)
-        query_result = list(self.database_handler.execute_query(query))
+        query_result = list(self._execute_query(query))
 
         if not query_result:
             # No sub-members are found, and apparantly all inputs were leaf members.
@@ -276,7 +278,7 @@ class QueryResolver:
             if 'ANY' not in [m.strip().upper() for m in mbrs_by_ref]:
                 query = query.lookup_attrs_in(['mnt-by'], mbrs_by_ref)
 
-            referring_objects = self.database_handler.execute_query(query)
+            referring_objects = self._execute_query(query)
 
             for result in referring_objects:
                 member_object_class = result['object_class']
@@ -291,7 +293,7 @@ class QueryResolver:
             sources = self.sources_default if self.sources_default else self.all_valid_sources
         invalid_sources = [s for s in sources if s not in self.all_valid_sources]
         query = DatabaseStatusQuery().sources(sources)
-        query_results = self.database_handler.execute_query(query)
+        query_results = self._execute_query(query)
 
         results: OrderedDict[str, OrderedDict[str, Any]] = OrderedDict()
         for query_result in query_results:
@@ -321,6 +323,15 @@ class QueryResolver:
         except KeyError:
             raise InvalidQueryException(f'Unknown object class: {object_class}')
 
+    def enable_sql_trace(self):
+        self.sql_trace = True
+
+    def retrieve_sql_trace(self) -> List[str]:
+        trace = self.sql_queries
+        self.sql_trace = False
+        self.sql_queries = []
+        return trace
+
     def _prepare_query(self, column_names=None, ordered_by_sources=True) -> RPSLDatabaseQuery:
         """Prepare an RPSLDatabaseQuery by applying relevant sources/class filters."""
         query = RPSLDatabaseQuery(column_names, ordered_by_sources)
@@ -334,3 +345,9 @@ class QueryResolver:
             query.scopefilter_status([ScopeFilterStatus.in_scope])
         self.object_class_filter = []
         return query
+
+    def _execute_query(self, query) -> RPSLDatabaseResponse:
+        if self.sql_trace:
+            self.sql_queries.append(repr(query))
+        return self.database_handler.execute_query(query)
+

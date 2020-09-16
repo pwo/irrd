@@ -28,8 +28,8 @@ class SchemaGenerator:
               rpslObjects({self.lookup_params}): [RPSLObject]
               databaseStatus(sources: [String]): [DatabaseStatus]
               asnPrefixes(asns: [Int!]!, sources: [String]): [ASNPrefixes]
-              asSetPrefixes(setNames: [String!]!, sources: [String], ipVersion: Int): [AsSetPrefixes]
-              recursiveSetMembers(setNames: [String!]!, sources: [String]): [SetMembers]
+              asSetPrefixes(setNames: [String!]!, sources: [String], ipVersion: Int, sqlTrace: Boolean): [AsSetPrefixes]
+              recursiveSetMembers(setNames: [String!]!, sources: [String], sqlTrace: Boolean): [SetMembers]
             }}
 
             type DatabaseStatus {{
@@ -88,7 +88,7 @@ class SchemaGenerator:
     def _set_lookup_params(self):
         names = {'rpslPk', 'sources', 'objectClass'}.union(lookup_field_names())
         params = [to_camel_case(p) + ': [String]' for p in names]
-        params += ['sqlDebug: Boolean']
+        params += ['sqlTrace: Boolean']
         self.lookup_params = ', '.join(params)
 
     def _set_rpsl_object_interface_schema(self):

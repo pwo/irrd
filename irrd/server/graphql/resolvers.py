@@ -27,8 +27,8 @@ def resolve_rpsl_object_type(obj, *_):
 
 @ariadne.convert_kwargs_to_snake_case
 def resolve_query_rpsl_objects(_, info, **kwargs):
-    if kwargs.get('sql_debug'):
-        info.context['sql_debug'] = True
+    if kwargs.get('sql_trace'):
+        info.context['sql_trace'] = True
 
     all_valid_sources = set(get_setting('sources', {}).keys())
     if get_setting('rpki.roa_source'):
@@ -119,7 +119,7 @@ def resolve_rpsl_object_members_objs(rpsl_object, info):
 
 
 def rpsl_db_query_to_graphql(query: RPSLDatabaseQuery, info):
-    if info.context.get('sql_debug'):
+    if info.context.get('sql_trace'):
         if 'sql_queries' not in info.context:
             info.context['sql_queries'] = [repr(query)]
         else:
@@ -156,19 +156,27 @@ def resolve_asn_prefixes(_, info, asns, sources=None):
 
 
 @ariadne.convert_kwargs_to_snake_case
-def resolve_as_set_prefixes(_, info, set_names, sources=None, ip_version=None):
+def resolve_as_set_prefixes(_, info, set_names, sources=None, ip_version=None, sql_trace=False):
+    if sql_trace:
+        qr.enable_sql_trace()
     qr.set_query_sources(sources)
     for set_name in set_names:
         prefixes = list(qr.routes_for_as_set(set_name, ip_version))
         yield dict(rpslPk=set_name, prefixes=prefixes)
+    if sql_trace:
+        info.context['sql_queries'] = qr.retrieve_sql_trace()
 
 
 @ariadne.convert_kwargs_to_snake_case
-def resolve_recursive_set_members(_, info, set_names, sources=None):
+def resolve_recursive_set_members(_, info, set_names, sources=None, sql_trace=False):
+    if sql_trace:
+        qr.enable_sql_trace()
     qr.set_query_sources(sources)
     for set_name in set_names:
         members = list(qr.members_for_set(set_name, recursive=True))
         yield dict(rpslPk=set_name, members=members)
+    if sql_trace:
+        info.context['sql_queries'] = qr.retrieve_sql_trace()
 
 
 def _columns_for_fields(info):
