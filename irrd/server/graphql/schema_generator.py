@@ -27,7 +27,9 @@ class SchemaGenerator:
             type Query {{
               rpslObjects({self.lookup_params}): [RPSLObject]
               databaseStatus(sources: [String]): [DatabaseStatus]
-              originatedPrefixes(origins: [Int!]!, sources: [String]): [OriginatedPrefixes]
+              asnPrefixes(asns: [Int!]!, sources: [String]): [ASNPrefixes]
+              asSetPrefixes(setNames: [String!]!, sources: [String], ipVersion: Int): [AsSetPrefixes]
+              recursiveSetMembers(setNames: [String!]!, sources: [String]): [SetMembers]
             }}
 
             type DatabaseStatus {{
@@ -45,9 +47,19 @@ class SchemaGenerator:
                 synchronised_serials: Boolean
             }}           
 
-            type OriginatedPrefixes {{
+            type ASNPrefixes {{
                 asn: Int
                 prefixes: [String]
+            }}
+
+            type AsSetPrefixes {{
+                rpslPk: String
+                prefixes: [String]
+            }}
+
+            type SetMembers {{
+                rpslPk: String
+                members: [String]
             }}
         """
         schema += self.rpsl_object_interface_schema
@@ -69,7 +81,9 @@ class SchemaGenerator:
         for name in self.rpsl_object_schemas.keys():
             self.object_types.append(ariadne.ObjectType(name))
 
-        self.object_types.append(ariadne.ObjectType("OriginatedPrefixes"))
+        self.object_types.append(ariadne.ObjectType("ASNPrefixes"))
+        self.object_types.append(ariadne.ObjectType("AsSetPrefixes"))
+        self.object_types.append(ariadne.ObjectType("SetMembers"))
 
     def _set_lookup_params(self):
         names = {'rpslPk', 'sources', 'objectClass'}.union(lookup_field_names())

@@ -9,7 +9,8 @@ from .resolvers import (resolve_query_rpsl_objects, resolve_rpsl_object_type,
                         resolve_database_status, resolve_rpsl_object_mnt_by_objs,
                         resolve_rpsl_object_member_of_objs, resolve_rpsl_object_members_by_refobjs,
                         resolve_rpsl_object_members_objs, resolve_rpsl_object_adminc_objs,
-                        resolve_originated_prefixes)
+                        resolve_asn_prefixes, resolve_as_set_prefixes,
+                        resolve_recursive_set_members)
 from .schema_generator import SchemaGenerator
 
 schema = SchemaGenerator()
@@ -20,7 +21,9 @@ schema.rpsl_contact_union_type.set_type_resolver(resolve_rpsl_object_type)
 
 schema.query_type.set_field("rpslObjects", resolve_query_rpsl_objects)
 schema.query_type.set_field("databaseStatus", resolve_database_status)
-schema.query_type.set_field("originatedPrefixes", resolve_originated_prefixes)
+schema.query_type.set_field("asnPrefixes", resolve_asn_prefixes)
+schema.query_type.set_field("asSetPrefixes", resolve_as_set_prefixes)
+schema.query_type.set_field("recursiveSetMembers", resolve_recursive_set_members)
 
 schema.rpsl_object_type.set_field("mntByObjs", resolve_rpsl_object_mnt_by_objs)
 for object_type in schema.object_types:

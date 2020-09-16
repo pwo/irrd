@@ -149,10 +149,26 @@ def resolve_database_status(_, info, sources=None):
         yield data
 
 
-def resolve_originated_prefixes(_, info, origins, sources=None):
+def resolve_asn_prefixes(_, info, asns, sources=None):
     qr.set_query_sources(sources)
-    for origin in origins:
-        yield dict(asn=origin, prefixes=list(qr.routes_for_origin(f'AS{origin}')))
+    for asn in asns:
+        yield dict(asn=asn, prefixes=list(qr.routes_for_origin(f'AS{asn}')))
+
+
+@ariadne.convert_kwargs_to_snake_case
+def resolve_as_set_prefixes(_, info, set_names, sources=None, ip_version=None):
+    qr.set_query_sources(sources)
+    for set_name in set_names:
+        prefixes = list(qr.routes_for_as_set(set_name, ip_version))
+        yield dict(rpslPk=set_name, prefixes=prefixes)
+
+
+@ariadne.convert_kwargs_to_snake_case
+def resolve_recursive_set_members(_, info, set_names, sources=None):
+    qr.set_query_sources(sources)
+    for set_name in set_names:
+        members = list(qr.members_for_set(set_name, recursive=True))
+        yield dict(rpslPk=set_name, members=members)
 
 
 def _columns_for_fields(info):
