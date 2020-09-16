@@ -1,10 +1,11 @@
 from collections import OrderedDict, defaultdict
-from typing import Optional, Dict
+from typing import Optional, Dict, Tuple
 
 import ariadne
 
-from irrd.rpsl.fields import RPSLFieldListMixin
-from irrd.rpsl.rpsl_objects import lookup_field_names, OBJECT_CLASS_MAPPING, RPSLAsBlock
+from irrd.rpsl.fields import RPSLFieldListMixin, RPSLReferenceField
+from irrd.rpsl.rpsl_objects import lookup_field_names, OBJECT_CLASS_MAPPING, RPSLAsBlock, \
+    RPSLAutNum, RPSLInetRtr
 from irrd.utils.text import to_camel_case
 
 
@@ -67,7 +68,7 @@ class SchemaGenerator:
         self.object_types.append(ariadne.ObjectType("Originated"))
 
     def _set_lookup_params(self):
-        names = {'rpslPK', 'sources', 'objectClass'}.union(lookup_field_names())
+        names = {'rpslPk', 'sources', 'objectClass'}.union(lookup_field_names())
         params = [to_camel_case(p) + ': [String]' for p in names]
         params += ['sqlDebug: Boolean']
         self.lookup_params = ', '.join(params)
@@ -82,13 +83,18 @@ class SchemaGenerator:
         common_fields = list(common_fields)
         common_fields = ['rpslPk', 'objectClass', 'rpslText', 'updated'] + common_fields
         common_field_dict = OrderedDict()
-        for field in common_fields:
+        for field_name in common_fields:
             try:
                 # These fields are present in every object, so this is a safe check
-                graphql_type = self._graphql_type_for_rpsl_field(RPSLAsBlock.fields[field])
+                rpsl_field = RPSLAsBlock.fields[field_name]
+                graphql_type = self._graphql_type_for_rpsl_field(rpsl_field)
+
+                reference_name, reference_type = self._grapql_type_for_reference_field(field_name, rpsl_field)
+                if reference_name and reference_type:
+                    common_field_dict[reference_name] = reference_type
             except KeyError:
                 graphql_type = 'String'
-            common_field_dict[to_camel_case(field)] = graphql_type
+            common_field_dict[to_camel_case(field_name)] = graphql_type
         schema = self._generate_schema_str('RPSLObject', 'interface', common_field_dict)
         self.rpsl_object_interface_schema = schema
 
@@ -97,22 +103,27 @@ class SchemaGenerator:
         schemas = OrderedDict()
         for object_class, klass in OBJECT_CLASS_MAPPING.items():
             object_name = klass.__name__
-            fields = OrderedDict()
-            fields['rpslPk'] = 'String'
-            fields['objectClass'] = 'String'
-            fields['rpslText'] = 'String'
-            fields['updated'] = 'String'
+            graphql_fields = OrderedDict()
+            graphql_fields['rpslPk'] = 'String'
+            graphql_fields['objectClass'] = 'String'
+            graphql_fields['rpslText'] = 'String'
+            graphql_fields['updated'] = 'String'
             for name, field in klass.fields.items():
                 graphql_type = self._graphql_type_for_rpsl_field(field)
-                fields[to_camel_case(name)] = graphql_type
-                self.graphql_types[object_class][name] = graphql_type
+                graphql_fields[to_camel_case(name)] = graphql_type
+                self.graphql_types[to_camel_case(object_name)][name] = graphql_type
+
+                reference_name, reference_type = self._grapql_type_for_reference_field(name, field)
+                if reference_name and reference_type:
+                    graphql_fields[reference_name] = reference_type
+                    self.graphql_types[object_name][reference_name] = reference_type
+
             for name in klass.field_extracts:
                 graphql_type = 'ASN' if name.startswith('asn') else 'String'
-                fields[to_camel_case(name)] = graphql_type
+                graphql_fields[to_camel_case(name)] = graphql_type
             if klass.rpki_relevant:
-                fields['rpkiStatus'] = 'String'
-
-            schema = self._generate_schema_str(object_name, 'type', fields, 'RPSLObject')
+                graphql_fields['rpkiStatus'] = 'String'
+            schema = self._generate_schema_str(object_name, 'type', graphql_fields, 'RPSLObject')
             schemas[object_name] = schema
         self.rpsl_object_schemas = schemas
 
@@ -120,6 +131,22 @@ class SchemaGenerator:
         if RPSLFieldListMixin in field.__class__.__bases__:
             return '[String]'
         return 'String'
+
+    def _grapql_type_for_reference_field(self, field_name: str, rpsl_field) -> Tuple[Optional[str], Optional[str]]:
+        if getattr(rpsl_field, 'referring', None):
+            rpsl_field.resolve_references()
+            graphql_name = to_camel_case(field_name) + 'Objs'
+            grapql_referring = set(rpsl_field.referring_object_classes)
+            if RPSLAutNum in grapql_referring:
+                grapql_referring.remove(RPSLAutNum)
+            if RPSLInetRtr in grapql_referring:
+                grapql_referring.remove(RPSLInetRtr)
+            if len(grapql_referring) > 1:
+                print(f'ignoring {field_name} due to multiple refs: {grapql_referring}')
+                return None, None
+            grapql_type = '[' + grapql_referring.pop().__name__ + ']'
+            return graphql_name, grapql_type
+        return None, None
 
     def _generate_schema_str(self, name: str, graphql_type: str, fields: Dict[str, str], implements: Optional[str]=None) -> str:
         schema = f'{graphql_type} {name} '

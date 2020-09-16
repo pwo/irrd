@@ -454,7 +454,7 @@ class RPSLReferenceField(RPSLTextField):
 
     def parse(self, value: str, messages: RPSLParserMessages, strict_validation=True) -> Optional[RPSLFieldParseResult]:
         if not self.referring_identifier_fields:
-            self._build_cache()
+            self.resolve_references()
 
         referring_field_messages = RPSLParserMessages()
         for identifier_field in self.referring_identifier_fields:
@@ -466,7 +466,7 @@ class RPSLReferenceField(RPSLTextField):
         messages.merge_messages(referring_field_messages)
         return None
 
-    def _build_cache(self):
+    def resolve_references(self):
         from .rpsl_objects import OBJECT_CLASS_MAPPING
         for ref in self.referring:
             rpsl_object_class = OBJECT_CLASS_MAPPING[ref]
