@@ -353,6 +353,7 @@ class RPSLDatabaseJournalQuery(BaseRPSLObjectDatabaseQuery):
             self.columns.operation,
             self.columns.object_class,
             self.columns.object_text,
+            self.columns.origin,
             self.columns.timestamp,
         ]).order_by(self.columns.source.asc(), self.columns.serial_nrtm.asc())
 

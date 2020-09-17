@@ -9,7 +9,7 @@ from irrd.storage.preload import Preloader
 from irrd.utils.text import to_camel_case
 from .schema_generator import SchemaGenerator
 from irrd.rpsl.rpsl_objects import OBJECT_CLASS_MAPPING, lookup_field_names
-from irrd.storage.queries import RPSLDatabaseQuery
+from irrd.storage.queries import RPSLDatabaseQuery, RPSLDatabaseJournalQuery
 from ...rpki.status import RPKIStatus
 from ...scopefilter.status import ScopeFilterStatus
 
@@ -37,8 +37,8 @@ def resolve_query_rpsl_objects(_, info, **kwargs):
     sources_default = set(get_setting('sources_default', []))
 
     query = RPSLDatabaseQuery(column_names=_columns_for_fields(info), ordered_by_sources=False, enable_ordering=False)
-    query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
-    query.scopefilter_status([ScopeFilterStatus.in_scope])
+    # query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
+    # query.scopefilter_status([ScopeFilterStatus.in_scope])
 
     if 'rpsl_pk' in kwargs:
         query.rpsl_pks(kwargs['rpsl_pk'])
@@ -111,6 +111,17 @@ def _resolve_subquery(rpsl_object, info, object_classes, pk_field, sticky_source
     if sticky_source:
         query.sources([rpsl_object['source']])
     return rpsl_db_query_to_graphql(query, info)
+
+
+def resolve_journal(rpsl_object, info):
+    query = RPSLDatabaseJournalQuery()
+    query.sources([rpsl_object['source']]).rpsl_pk(rpsl_object['rpslPk'])
+    for row in dh.execute_query(query):
+        response = {to_camel_case(k): v for k, v in row.items()}
+        response['operation'] = response['operation'].name
+        if response['origin']:
+            response['origin'] = response['origin'].name
+        yield response
 
 
 def rpsl_db_query_to_graphql(query: RPSLDatabaseQuery, info):

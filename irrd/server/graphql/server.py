@@ -12,7 +12,8 @@ from .resolvers import (resolve_query_rpsl_objects, resolve_rpsl_object_type,
                         resolve_rpsl_object_member_of_objs, resolve_rpsl_object_members_by_ref_objs,
                         resolve_rpsl_object_members_objs, resolve_rpsl_object_adminc_objs,
                         resolve_asn_prefixes, resolve_as_set_prefixes,
-                        resolve_recursive_set_members, resolve_rpsl_object_techc_objs)
+                        resolve_recursive_set_members, resolve_rpsl_object_techc_objs,
+                        resolve_journal)
 from .schema_generator import SchemaGenerator
 from ...utils.text import clean_ip_value_error
 
@@ -29,6 +30,7 @@ schema.query_type.set_field("asSetPrefixes", resolve_as_set_prefixes)
 schema.query_type.set_field("recursiveSetMembers", resolve_recursive_set_members)
 
 schema.rpsl_object_type.set_field("mntByObjs", resolve_rpsl_object_mnt_by_objs)
+schema.rpsl_object_type.set_field("journal", resolve_journal)
 for object_type in schema.object_types:
     if 'adminCObjs' in schema.graphql_types[object_type.name]:
         object_type.set_field("adminCObjs", resolve_rpsl_object_adminc_objs)

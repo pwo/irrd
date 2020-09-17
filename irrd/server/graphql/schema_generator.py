@@ -48,6 +48,17 @@ class SchemaGenerator:
                 synchronised_serials: Boolean!
             }}           
 
+            type RPSLJournalEntry {{
+                rpslPk: String!
+                source: String!
+                serialNrtm: Int!
+                operation: String!
+                origin: String
+                objectClass: String!
+                objectText: String!
+                timestamp: String!
+            }}
+
             type ASNPrefixes {{
                 asn: Int!
                 prefixes: [IP!]
@@ -126,6 +137,7 @@ class SchemaGenerator:
             except KeyError:
                 graphql_type = 'String'
             common_field_dict[to_camel_case(field_name)] = graphql_type
+        common_field_dict['journal'] = '[RPSLJournalEntry]'
         schema = self._generate_schema_str('RPSLObject', 'interface', common_field_dict)
         self.rpsl_object_interface_schema = schema
 
@@ -158,6 +170,7 @@ class SchemaGenerator:
             graphql_fields['objectClass'] = 'String'
             graphql_fields['objectText'] = 'String'
             graphql_fields['updated'] = 'String'
+            graphql_fields['journal'] = '[RPSLJournalEntry]'
             for name, field in klass.fields.items():
                 graphql_type = self._graphql_type_for_rpsl_field(field)
                 graphql_fields[to_camel_case(name)] = graphql_type
