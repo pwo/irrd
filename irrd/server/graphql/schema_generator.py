@@ -26,41 +26,41 @@ class SchemaGenerator:
 
 
             type Query {{
-              rpslObjects({self.rpsl_query_fields}): [RPSLObject]
-              databaseStatus(sources: [String]): [DatabaseStatus]
-              asnPrefixes(asns: [Int!]!, sources: [String]): [ASNPrefixes]
-              asSetPrefixes(setNames: [String!]!, sources: [String], ipVersion: Int, sqlTrace: Boolean): [AsSetPrefixes]
-              recursiveSetMembers(setNames: [String!]!, sources: [String], sqlTrace: Boolean): [SetMembers]
+              rpslObjects({self.rpsl_query_fields}): [RPSLObject!]
+              databaseStatus(sources: [String!]): [DatabaseStatus]
+              asnPrefixes(asns: [Int!]!, sources: [String!]): [ASNPrefixes]
+              asSetPrefixes(setNames: [String!]!, sources: [String!], ipVersion: Int, sqlTrace: Boolean): [AsSetPrefixes!]
+              recursiveSetMembers(setNames: [String!]!, sources: [String!], sqlTrace: Boolean): [SetMembers!]
             }}
 
             type DatabaseStatus {{
-                source: String
-                authoritative: Boolean
-                object_class_filter: [String]
-                rpki_rov_filter: Boolean
-                scopefilter_enabled: Boolean
-                local_journal_kept: Boolean
+                source: String!
+                authoritative: Boolean!
+                object_class_filter: [String!]
+                rpki_rov_filter: Boolean!
+                scopefilter_enabled: Boolean!
+                local_journal_kept: Boolean!
                 serial_oldest_journal: Int
                 serial_newest_journal: Int
                 serial_last_export: Int
                 serial_newest_mirror: Int
                 last_update: String
-                synchronised_serials: Boolean
+                synchronised_serials: Boolean!
             }}           
 
             type ASNPrefixes {{
-                asn: Int
-                prefixes: [IP]
+                asn: Int!
+                prefixes: [IP!]
             }}
 
             type AsSetPrefixes {{
-                rpslPk: String
-                prefixes: [IP]
+                rpslPk: String!
+                prefixes: [IP!]
             }}
 
             type SetMembers {{
-                rpslPk: String
-                members: [String]
+                rpslPk: String!
+                members: [String!]
             }}
         """
         schema += self.rpsl_object_interface_schema
@@ -92,13 +92,13 @@ class SchemaGenerator:
 
     def _set_rpsl_query_fields(self):
         string_list_fields = {'rpsl_pk', 'sources', 'object_class'}.union(lookup_field_names())
-        params = [to_camel_case(p) + ': [String]' for p in string_list_fields]
+        params = [to_camel_case(p) + ': [String!]' for p in string_list_fields]
         params += [
             'ipExact: IP',
             'ipLessSpecific: IP',
             'ipLessSpecificOneLevel: IP',
             'ipMoreSpecific: IP',
-            'asns: [ASN]',
+            'asns: [ASN!]',
             'textSearch: String',
             'sqlTrace: Boolean',
         ]
@@ -187,7 +187,7 @@ class SchemaGenerator:
 
     def _graphql_type_for_rpsl_field(self, field) -> str:
         if RPSLFieldListMixin in field.__class__.__bases__ or field.multiple:
-            return '[String]'
+            return '[String!]'
         return 'String'
 
     def _grapql_type_for_reference_field(self, field_name: str, rpsl_field) -> Tuple[Optional[str], Optional[str]]:
@@ -200,9 +200,9 @@ class SchemaGenerator:
             if RPSLInetRtr in grapql_referring:
                 grapql_referring.remove(RPSLInetRtr)
             if grapql_referring == {RPSLPerson, RPSLRole}:
-                graphql_type = '[RPSLContactUnion]'
+                graphql_type = '[RPSLContactUnion!]'
             else:
-                graphql_type = '[' + grapql_referring.pop().__name__ + ']'
+                graphql_type = '[' + grapql_referring.pop().__name__ + '!]'
             return graphql_name, graphql_type
         return None, None
 
