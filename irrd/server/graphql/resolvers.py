@@ -1,5 +1,6 @@
 import ariadne
 import graphql
+from IPy import IP
 
 from irrd.conf import config_init, get_setting, RPKI_IRR_PSEUDO_SOURCE
 from irrd.server.query_resolver import QueryResolver
@@ -43,10 +44,21 @@ def resolve_query_rpsl_objects(_, info, **kwargs):
         query.rpsl_pks(kwargs['rpsl_pk'])
     if 'object_class' in kwargs:
         query.object_classes(kwargs['object_class'])
+    if 'asns' in kwargs:
+        query.asns_first(kwargs['asns'])
+    if 'text_search' in kwargs:
+        query.text_search(kwargs['text_search'])
+
+    ip_filters = 'ip_exact', 'ip_less_specific', 'ip_less_specific_one_level', 'ip_more_specific'
+    for ip_filter in ip_filters:
+        if ip_filter in kwargs:
+            getattr(query, ip_filter)(IP(kwargs[ip_filter]))
+
     if 'sources' in kwargs:
         query.sources(kwargs['sources'])
     elif sources_default != all_valid_sources:
         query.sources(list(sources_default))
+
     for attr, value in kwargs.items():
         if attr in lookup_fields:
             query.lookup_attrs_in([attr.replace('_', '-')], value)

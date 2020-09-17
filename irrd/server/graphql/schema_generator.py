@@ -11,7 +11,7 @@ from irrd.utils.text import to_camel_case
 
 class SchemaGenerator:
     def __init__(self):
-        self._set_lookup_params()
+        self._set_rpsl_query_fields()
         self._set_rpsl_object_interface_schema()
         self._set_rpsl_contact_schema()
         self._set_rpsl_object_schemas()
@@ -25,7 +25,7 @@ class SchemaGenerator:
 
 
             type Query {{
-              rpslObjects({self.lookup_params}): [RPSLObject]
+              rpslObjects({self.rpsl_query_fields}): [RPSLObject]
               databaseStatus(sources: [String]): [DatabaseStatus]
               asnPrefixes(asns: [Int!]!, sources: [String]): [ASNPrefixes]
               asSetPrefixes(setNames: [String!]!, sources: [String], ipVersion: Int, sqlTrace: Boolean): [AsSetPrefixes]
@@ -85,11 +85,19 @@ class SchemaGenerator:
         self.object_types.append(ariadne.ObjectType("AsSetPrefixes"))
         self.object_types.append(ariadne.ObjectType("SetMembers"))
 
-    def _set_lookup_params(self):
-        names = {'rpslPk', 'sources', 'objectClass'}.union(lookup_field_names())
-        params = [to_camel_case(p) + ': [String]' for p in names]
-        params += ['sqlTrace: Boolean']
-        self.lookup_params = ', '.join(params)
+    def _set_rpsl_query_fields(self):
+        string_list_fields = {'rpsl_pk', 'sources', 'object_class'}.union(lookup_field_names())
+        params = [to_camel_case(p) + ': [String]' for p in string_list_fields]
+        params += [
+            'ipExact: String',
+            'ipLessSpecific: String',
+            'ipLessSpecificOneLevel: String',
+            'ipMoreSpecific: String',
+            'asns: [ASN]',
+            'textSearch: String',
+            'sqlTrace: Boolean',
+        ]
+        self.rpsl_query_fields = ', '.join(params)
 
     def _set_rpsl_object_interface_schema(self):
         common_fields = None
@@ -156,7 +164,12 @@ class SchemaGenerator:
                     self.graphql_types[object_name][reference_name] = reference_type
 
             for name in klass.field_extracts:
-                graphql_type = 'ASN' if name.startswith('asn') else 'String'
+                if name.startswith('asn'):
+                    graphql_type = 'ASN'
+                elif name == 'prefix_length':
+                    graphql_type = 'Int'
+                else:
+                    graphql_type = 'String'
                 graphql_fields[to_camel_case(name)] = graphql_type
             if klass.rpki_relevant:
                 graphql_fields['rpkiStatus'] = 'String'

@@ -285,7 +285,7 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         fltr = self.columns.scopefilter_status.in_(status)
         return self._filter(fltr)
 
-    def text_search(self, value: str):
+    def text_search(self, value: str, extract_asn_ip=True):
         """
         Search the database for a specific free text.
 
@@ -297,19 +297,21 @@ class RPSLDatabaseQuery(BaseRPSLObjectDatabaseQuery):
         - Otherwise, return all objects where the RPSL primary key is exactly this value,
           or it matches part of a person/role name (not nic-hdl, their
           actual person/role attribute value).
+         If extract_asn_ip is False, the first two steps are skipped.
         """
         self._check_query_frozen()
-        try:
-            _, asn = parse_as_number(value)
-            return self.object_classes(['as-block', 'as-set', 'aut-num']).asn_less_specific(asn)
-        except ValidationError:
-            pass
+        if extract_asn_ip:
+            try:
+                _, asn = parse_as_number(value)
+                return self.object_classes(['as-block', 'as-set', 'aut-num']).asn_less_specific(asn)
+            except ValidationError:
+                pass
 
-        try:
-            ip = IP(value)
-            return self.ip_less_specific(ip)
-        except ValueError:
-            pass
+            try:
+                ip = IP(value)
+                return self.ip_less_specific(ip)
+            except ValueError:
+                pass
 
         counter = self._lookup_attr_counter
         self._lookup_attr_counter += 1
