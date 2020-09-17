@@ -79,3 +79,10 @@ def to_camel_case(snake: Union[Set[str], List[str], str]):
         return [_str_to_camel_case(s) for s in snake]
     return _str_to_camel_case(snake)
 
+
+# Turn "IP('193.0.1.1/21') has invalid prefix length (21)" into "invalid prefix length (21)"
+re_clean_ip_error = re.compile(r"IP\('[A-F0-9:./]+'\) has ", re.IGNORECASE)
+
+
+def clean_ip_value_error(value_error):
+    return re.sub(re_clean_ip_error, '', str(value_error))

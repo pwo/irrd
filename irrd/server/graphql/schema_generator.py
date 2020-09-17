@@ -18,6 +18,7 @@ class SchemaGenerator:
 
         schema = f"""
             scalar ASN
+            scalar IP
 
             schema {{
               query: Query
@@ -49,12 +50,12 @@ class SchemaGenerator:
 
             type ASNPrefixes {{
                 asn: Int
-                prefixes: [String]
+                prefixes: [IP]
             }}
 
             type AsSetPrefixes {{
                 rpslPk: String
-                prefixes: [String]
+                prefixes: [IP]
             }}
 
             type SetMembers {{
@@ -79,6 +80,8 @@ class SchemaGenerator:
         self.object_types.append(self.rpsl_contact_union_type)
         self.asn_scalar_type = ariadne.ScalarType("ASN")
         self.object_types.append(self.asn_scalar_type)
+        self.ip_scalar_type = ariadne.ScalarType("IP")
+        self.object_types.append(self.ip_scalar_type)
 
         for name in self.rpsl_object_schemas.keys():
             self.object_types.append(ariadne.ObjectType(name))
@@ -91,10 +94,10 @@ class SchemaGenerator:
         string_list_fields = {'rpsl_pk', 'sources', 'object_class'}.union(lookup_field_names())
         params = [to_camel_case(p) + ': [String]' for p in string_list_fields]
         params += [
-            'ipExact: String',
-            'ipLessSpecific: String',
-            'ipLessSpecificOneLevel: String',
-            'ipMoreSpecific: String',
+            'ipExact: IP',
+            'ipLessSpecific: IP',
+            'ipLessSpecificOneLevel: IP',
+            'ipMoreSpecific: IP',
             'asns: [ASN]',
             'textSearch: String',
             'sqlTrace: Boolean',
@@ -168,6 +171,8 @@ class SchemaGenerator:
             for name in klass.field_extracts:
                 if name.startswith('asn'):
                     graphql_type = 'ASN'
+                elif name == 'prefix':
+                    graphql_type = 'IP'
                 elif name == 'prefix_length':
                     graphql_type = 'Int'
                 else:

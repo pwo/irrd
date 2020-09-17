@@ -1,5 +1,6 @@
 import time
 
+from IPy import IP
 from ariadne import make_executable_schema, ScalarType
 from ariadne.asgi import GraphQL
 from ariadne.contrib.tracing.apollotracing import ApolloTracingExtension
@@ -13,6 +14,7 @@ from .resolvers import (resolve_query_rpsl_objects, resolve_rpsl_object_type,
                         resolve_asn_prefixes, resolve_as_set_prefixes,
                         resolve_recursive_set_members, resolve_rpsl_object_techc_objs)
 from .schema_generator import SchemaGenerator
+from ...utils.text import clean_ip_value_error
 
 schema = SchemaGenerator()
 
@@ -50,6 +52,14 @@ def parse_asn_scalar(value):
         return int(value)
     except ValueError:
         raise GraphQLError(f'Invalid ASN: {value}; must be numeric')
+
+
+@schema.ip_scalar_type.value_parser
+def parse_ip_scalar(value):
+    try:
+        return IP(value)
+    except ValueError as ve:
+        raise GraphQLError(f'Invalid IP: {value}: {clean_ip_value_error(ve)}')
 
 
 class QueryMetadataExtension(Extension):

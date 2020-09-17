@@ -4,11 +4,13 @@ from typing import List, Type, Optional
 
 from IPy import IP
 
+from irrd.utils.text import clean_ip_value_error
+from irrd.utils.validators import parse_as_number, ValidationError
 from .config import PASSWORD_HASHERS
 from .parser_state import RPSLParserMessages, RPSLFieldParseResult
-from irrd.utils.validators import parse_as_number, ValidationError
 
 # The IPv4/IPv6 regexes are for initial screening - not full validators
+
 re_ipv4_prefix = re.compile(r"^\d+\.\d+\.\d+\.\d+/\d+$")
 re_ipv6_prefix = re.compile(r"^[A-F\d:]+/\d+$", re.IGNORECASE)
 
@@ -24,9 +26,6 @@ re_generic_name = re.compile(r"^[A-Z][A-Z0-9_-]*[A-Z0-9]$", re.IGNORECASE)
 reserved_words = ["ANY", "AS-ANY", "RS_ANY", "PEERAS", "AND", "OR", "NOT", "ATOMIC", "FROM", "TO", "AT", "ACTION",
                   "ACCEPT", "ANNOUNCE", "EXCEPT", "REFINE", "NETWORKS", "INTO", "INBOUND", "OUTBOUND"]
 reserved_prefixes = ["AS-", "RS-", "RTRS-", "FLTR-", "PRNG-"]
-
-# Turn "IP('193.0.1.1/21') has invalid prefix length (21)" into "invalid prefix length (21)"
-re_clean_ip_error = re.compile(r"IP\('[A-F0-9:./]+'\) has ", re.IGNORECASE)
 
 """
 Fields for RPSL data.
@@ -549,7 +548,3 @@ def parse_set_name(prefixes: List[str], value: str, messages: RPSLParserMessages
     if parsed_value != value:
         messages.info(f'Set name {value} was reformatted as {parsed_value}')
     return RPSLFieldParseResult(parsed_value)
-
-
-def clean_ip_value_error(value_error):
-    return re.sub(re_clean_ip_error, '', str(value_error))
