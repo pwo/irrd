@@ -77,6 +77,8 @@ class SchemaGenerator:
         self.object_types.append(self.rpsl_object_type)
         self.rpsl_contact_union_type = ariadne.UnionType("RPSLContactUnion")
         self.object_types.append(self.rpsl_contact_union_type)
+        self.asn_scalar_type = ariadne.ScalarType("ASN")
+        self.object_types.append(self.asn_scalar_type)
 
         for name in self.rpsl_object_schemas.keys():
             self.object_types.append(ariadne.ObjectType(name))

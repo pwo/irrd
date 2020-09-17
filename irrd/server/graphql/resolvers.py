@@ -60,8 +60,9 @@ def resolve_query_rpsl_objects(_, info, **kwargs):
         query.sources(list(sources_default))
 
     for attr, value in kwargs.items():
+        attr = attr.replace('_', '-')
         if attr in lookup_fields:
-            query.lookup_attrs_in([attr.replace('_', '-')], value)
+            query.lookup_attrs_in([attr], value)
 
     return rpsl_db_query_to_graphql(query, info)
 

@@ -1,9 +1,10 @@
 import time
 
-from ariadne import make_executable_schema
+from ariadne import make_executable_schema, ScalarType
 from ariadne.asgi import GraphQL
 from ariadne.contrib.tracing.apollotracing import ApolloTracingExtension
 from ariadne.types import Extension
+from graphql import ValidationRule, FieldNode, GraphQLError
 
 from .resolvers import (resolve_query_rpsl_objects, resolve_rpsl_object_type,
                         resolve_database_status, resolve_rpsl_object_mnt_by_objs,
@@ -43,6 +44,14 @@ for object_type in schema.object_types:
         object_type.set_field("membersObjs", resolve_rpsl_object_members_objs)
 
 
+@schema.asn_scalar_type.value_parser
+def parse_asn_scalar(value):
+    try:
+        return int(value)
+    except ValueError:
+        raise GraphQLError(f'Invalid ASN: {value}; must be numeric')
+
+
 class QueryMetadataExtension(Extension):
     def __init__(self):
         self.start_timestamp = None
@@ -66,5 +75,8 @@ schema = make_executable_schema(schema.type_defs, *schema.object_types)
 
 
 # Create an ASGI app using the schema, running in debug mode
-app = GraphQL(schema, debug=True, extensions=[QueryMetadataExtension, ApolloTracingExtension])
+app = GraphQL(schema,
+              debug=True,
+              extensions=[QueryMetadataExtension, ApolloTracingExtension],
+              )
 
