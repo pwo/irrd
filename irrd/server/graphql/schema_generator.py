@@ -3,7 +3,7 @@ from typing import Optional, Dict, Tuple
 
 import ariadne
 
-from irrd.rpsl.fields import RPSLFieldListMixin, RPSLReferenceField
+from irrd.rpsl.fields import RPSLFieldListMixin
 from irrd.rpsl.rpsl_objects import lookup_field_names, OBJECT_CLASS_MAPPING, RPSLAsBlock, \
     RPSLAutNum, RPSLInetRtr, RPSLPerson, RPSLRole
 from irrd.utils.text import to_camel_case
@@ -46,7 +46,7 @@ class SchemaGenerator:
                 serial_newest_mirror: Int
                 last_update: String
                 synchronised_serials: Boolean!
-            }}           
+            }}
 
             type RPSLJournalEntry {{
                 rpslPk: String!
@@ -229,7 +229,3 @@ class SchemaGenerator:
             schema += f'  {field}: {field_type}\n'
         schema += '}\n\n'
         return schema
-
-
-
-
