@@ -141,7 +141,7 @@ def rpsl_db_query_to_graphql(query: RPSLDatabaseQuery, info):
         # TODO: try to restrict retrieved columns on what was requested
         graphql_result = {to_camel_case(k): v for k, v in row.items() if k != 'parsed_data'}
         if 'rpki_status' in row:
-            graphql_result['rpkiStatus'] = row['rpki_status'].name
+            graphql_result['rpkiStatus'] = row['rpki_status']
         if row.get('ip_first') and row.get('prefix_length'):
             graphql_result['prefix'] = row['ip_first'] + '/' + str(row['prefix_length'])
         if row.get('asn_first') and row.get('asn_first') == row.get('asn_last'):
