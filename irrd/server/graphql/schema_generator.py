@@ -81,7 +81,6 @@ class SchemaGenerator:
         schema += self.rpsl_contact_schema
         schema += ''.join(self.rpsl_object_schemas.values())
         schema += 'union RPSLContactUnion = RPSLPerson | RPSLRole'
-        print(schema)
 
         self.type_defs = ariadne.gql(schema)
 

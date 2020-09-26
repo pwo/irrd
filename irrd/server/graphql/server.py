@@ -1,3 +1,6 @@
+import logging
+import re
+import string
 import time
 
 from IPy import IP
@@ -17,8 +20,9 @@ from .resolvers import (resolve_query_rpsl_objects, resolve_rpsl_object_type,
 from .schema_generator import SchemaGenerator
 from ...utils.text import clean_ip_value_error
 
-schema = SchemaGenerator()
+logger = logging.getLogger(__name__)
 
+schema = SchemaGenerator()
 
 schema.rpsl_object_type.set_type_resolver(resolve_rpsl_object_type)
 schema.rpsl_contact_union_type.set_type_resolver(resolve_rpsl_object_type)
@@ -79,6 +83,11 @@ class QueryMetadataExtension(Extension):
         if 'sql_queries' in context:
             data['sql_query_count'] = len(context['sql_queries'])
             data['sql_queries'] = context['sql_queries']
+
+        query = context['request']._json
+        query['query'] = query['query'].replace(' ', '').replace('\n', '').replace('\t', '')
+        client = context['request'].client.host
+        logger.info(f'{client} ran query in {data.get("execution")}s: {query}')
         return data
 
 
@@ -88,7 +97,7 @@ schema = make_executable_schema(schema.type_defs, *schema.object_types)
 
 # Create an ASGI app using the schema, running in debug mode
 app = GraphQL(schema,
-              debug=True,
+              debug=False,
               extensions=[QueryMetadataExtension, ApolloTracingExtension],
               )
 
