@@ -37,8 +37,6 @@ def resolve_query_rpsl_objects(_, info, **kwargs):
     sources_default = set(get_setting('sources_default', []))
 
     query = RPSLDatabaseQuery(column_names=_columns_for_fields(info), ordered_by_sources=False, enable_ordering=False)
-    # query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
-    # query.scopefilter_status([ScopeFilterStatus.in_scope])
 
     if 'rpsl_pk' in kwargs:
         query.rpsl_pks(kwargs['rpsl_pk'])
@@ -48,6 +46,14 @@ def resolve_query_rpsl_objects(_, info, **kwargs):
         query.asns_first(kwargs['asns'])
     if 'text_search' in kwargs:
         query.text_search(kwargs['text_search'])
+    if 'rpki_status' in kwargs:
+        query.rpki_status(kwargs['rpki_status'])
+    else:
+        query.rpki_status([RPKIStatus.not_found, RPKIStatus.valid])
+    if 'scope_filter_status' in kwargs:
+        query.scopefilter_status(kwargs['scope_filter_status'])
+    else:
+        query.scopefilter_status([ScopeFilterStatus.in_scope])
 
     ip_filters = 'ip_exact', 'ip_less_specific', 'ip_less_specific_one_level', 'ip_more_specific'
     for ip_filter in ip_filters:

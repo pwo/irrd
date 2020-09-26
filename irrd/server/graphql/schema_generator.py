@@ -3,9 +3,11 @@ from typing import Optional, Dict, Tuple
 
 import ariadne
 
+from irrd.rpki.status import RPKIStatus
 from irrd.rpsl.fields import RPSLFieldListMixin
 from irrd.rpsl.rpsl_objects import lookup_field_names, OBJECT_CLASS_MAPPING, RPSLAsBlock, \
     RPSLAutNum, RPSLInetRtr, RPSLPerson, RPSLRole
+from irrd.scopefilter.status import ScopeFilterStatus
 from irrd.utils.text import to_camel_case
 
 
@@ -15,25 +17,26 @@ class SchemaGenerator:
         self._set_rpsl_object_interface_schema()
         self._set_rpsl_contact_schema()
         self._set_rpsl_object_schemas()
+        self._set_enums()
 
-        schema = f"""
+        schema = self.enums
+        schema += """
             scalar ASN
             scalar IP
 
-            schema {{
+            schema {
               query: Query
-            }}
+            }
 
-
-            type Query {{
-              rpslObjects({self.rpsl_query_fields}): [RPSLObject!]
+            type Query {
+              rpslObjects(""" + self.rpsl_query_fields + """): [RPSLObject!]
               databaseStatus(sources: [String!]): [DatabaseStatus]
               asnPrefixes(asns: [Int!]!, sources: [String!]): [ASNPrefixes]
               asSetPrefixes(setNames: [String!]!, sources: [String!], ipVersion: Int, sqlTrace: Boolean): [AsSetPrefixes!]
               recursiveSetMembers(setNames: [String!]!, sources: [String!], sqlTrace: Boolean): [SetMembers!]
-            }}
+            }
 
-            type DatabaseStatus {{
+            type DatabaseStatus {
                 source: String!
                 authoritative: Boolean!
                 object_class_filter: [String!]
@@ -46,9 +49,9 @@ class SchemaGenerator:
                 serial_newest_mirror: Int
                 last_update: String
                 synchronised_serials: Boolean!
-            }}
+            }
 
-            type RPSLJournalEntry {{
+            type RPSLJournalEntry {
                 rpslPk: String!
                 source: String!
                 serialNrtm: Int!
@@ -57,22 +60,22 @@ class SchemaGenerator:
                 objectClass: String!
                 objectText: String!
                 timestamp: String!
-            }}
+            }
 
-            type ASNPrefixes {{
+            type ASNPrefixes {
                 asn: Int!
                 prefixes: [IP!]
-            }}
+            }
 
-            type AsSetPrefixes {{
+            type AsSetPrefixes {
                 rpslPk: String!
                 prefixes: [IP!]
-            }}
+            }
 
-            type SetMembers {{
+            type SetMembers {
                 rpslPk: String!
                 members: [String!]
-            }}
+            }
         """
         schema += self.rpsl_object_interface_schema
         schema += self.rpsl_contact_schema
@@ -100,6 +103,8 @@ class SchemaGenerator:
         self.object_types.append(ariadne.ObjectType("ASNPrefixes"))
         self.object_types.append(ariadne.ObjectType("AsSetPrefixes"))
         self.object_types.append(ariadne.ObjectType("SetMembers"))
+        self.object_types.append(ariadne.EnumType("RPKIStatus", RPKIStatus))
+        self.object_types.append(ariadne.EnumType("ScopeFilterStatus", ScopeFilterStatus))
 
     def _set_rpsl_query_fields(self):
         string_list_fields = {'rpsl_pk', 'sources', 'object_class'}.union(lookup_field_names())
@@ -110,10 +115,20 @@ class SchemaGenerator:
             'ipLessSpecificOneLevel: IP',
             'ipMoreSpecific: IP',
             'asns: [ASN!]',
+            'rpkiStatus: [RPKIStatus!]',
+            'scopeFilterStatus: [ScopeFilterStatus!]',
             'textSearch: String',
             'sqlTrace: Boolean',
         ]
         self.rpsl_query_fields = ', '.join(params)
+
+    def _set_enums(self):
+        self.enums = ''
+        for enum in [RPKIStatus, ScopeFilterStatus]:
+            self.enums += f'enum {enum.__name__} {{\n'
+            for value in enum:
+                self.enums += f'    {value.name}\n'
+            self.enums += '}\n\n'
 
     def _set_rpsl_object_interface_schema(self):
         common_fields = None
