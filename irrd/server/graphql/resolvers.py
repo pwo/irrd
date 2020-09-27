@@ -112,7 +112,7 @@ def resolve_rpsl_object_members_objs(rpsl_object, info):
 
 def _resolve_subquery(rpsl_object, info, object_classes, pk_field, sticky_source=True):
     pks = rpsl_object.get(pk_field)
-    print(f'resolving {rpsl_object} into sub {object_classes} for {pk_field}: {pks}')
+    # print(f'resolving {rpsl_object} into sub {object_classes} for {pk_field}: {pks}')
     if not pks:
         return
     if not isinstance(pks, list):
@@ -143,7 +143,6 @@ def rpsl_db_query_to_graphql(query: RPSLDatabaseQuery, info):
             info.context['sql_queries'].append(repr(query))
 
     for row in dh.execute_query(query):
-        # TODO: try to restrict retrieved columns on what was requested
         graphql_result = {to_camel_case(k): v for k, v in row.items() if k != 'parsed_data'}
         if 'rpki_status' in row:
             graphql_result['rpkiStatus'] = row['rpki_status']
@@ -200,7 +199,8 @@ def resolve_recursive_set_members(_, info, set_names, sources=None, sql_trace=Fa
 
 
 def _columns_for_fields(info):
-    columns = {'object_class', 'source', 'parsed_data'}
+    # Some columns are always retrieved
+    columns = {'object_class', 'source', 'parsed_data', 'rpsl_pk'}
     fields = _collect_predicate_names(info.field_nodes[0].selection_set.selections)
     requested_fields = {ariadne.convert_camel_case_to_snake(f) for f in fields}
 
