@@ -85,7 +85,7 @@ class QueryMetadataExtension(Extension):
             data['sql_queries'] = context['sql_queries']
 
         query = context['request']._json
-        query['query'] = query['query'].replace(' ', '').replace('', ' ').replace('\t', '')
+        query['query'] = query['query'].replace(' ', '').replace('\n', ' ').replace('\t', '')
         client = context['request'].client.host
         logger.info(f'{client} ran query in {data.get("execution")}s: {query}')
         return data
