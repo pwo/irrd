@@ -31,24 +31,24 @@ class SchemaGenerator:
             type Query {
               rpslObjects(""" + self.rpsl_query_fields + """): [RPSLObject!]
               databaseStatus(sources: [String!]): [DatabaseStatus]
-              asnPrefixes(asns: [Int!]!, sources: [String!]): [ASNPrefixes]
-              asSetPrefixes(setNames: [String!]!, sources: [String!], ipVersion: Int, sqlTrace: Boolean): [AsSetPrefixes!]
+              asnPrefixes(asns: [ASN!]!, ipVersion: Int, sources: [String!]): [ASNPrefixes!]
+              asSetPrefixes(setNames: [String!]!, ipVersion: Int, sources: [String!], sqlTrace: Boolean): [AsSetPrefixes!]
               recursiveSetMembers(setNames: [String!]!, sources: [String!], sqlTrace: Boolean): [SetMembers!]
             }
 
             type DatabaseStatus {
                 source: String!
                 authoritative: Boolean!
-                object_class_filter: [String!]
-                rpki_rov_filter: Boolean!
-                scopefilter_enabled: Boolean!
-                local_journal_kept: Boolean!
-                serial_oldest_journal: Int
-                serial_newest_journal: Int
-                serial_last_export: Int
-                serial_newest_mirror: Int
-                last_update: String
-                synchronised_serials: Boolean!
+                objectClassFilter: [String!]
+                rpkiRovFilter: Boolean!
+                scopefilterEnabled: Boolean!
+                localJournalKept: Boolean!
+                serialOldestJournal: Int
+                serialNewestJournal: Int
+                serialLastExport: Int
+                serialNewestMirror: Int
+                lastUpdate: String
+                synchronisedSerials: Boolean!
             }
 
             type RPSLJournalEntry {
@@ -63,7 +63,7 @@ class SchemaGenerator:
             }
 
             type ASNPrefixes {
-                asn: Int!
+                asn: ASN!
                 prefixes: [IP!]
             }
 
