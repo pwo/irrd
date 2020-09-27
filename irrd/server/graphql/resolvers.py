@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import ariadne
 import graphql
 from IPy import IP
@@ -22,12 +24,15 @@ qr = QueryResolver('', '', pl, dh)
 schema = SchemaGenerator()
 lookup_fields = lookup_field_names()
 
+
 def resolve_rpsl_object_type(obj, *_):
     return OBJECT_CLASS_MAPPING[obj.get('objectClass', obj.get('object_class'))].__name__
 
 
 @ariadne.convert_kwargs_to_snake_case
 def resolve_query_rpsl_objects(_, info, **kwargs):
+    if not kwargs:
+        raise ValueError('You must provide at least one query parameter.')
     if kwargs.get('sql_trace'):
         info.context['sql_trace'] = True
 
@@ -157,14 +162,17 @@ def rpsl_db_query_to_graphql(query: RPSLDatabaseQuery, info):
 
 def resolve_database_status(_, info, sources=None):
     for name, data in qr.database_status(sources=sources).items():
-        data['source'] = name
-        yield data
+        camel_case_data = OrderedDict(data)
+        camel_case_data['source'] = name
+        for key, value in data.items():
+            camel_case_data[to_camel_case(key)] = value
+        yield camel_case_data
 
 
-def resolve_asn_prefixes(_, info, asns, sources=None):
+def resolve_asn_prefixes(_, info, asns, ip_version=None, sources=None):
     qr.set_query_sources(sources)
     for asn in asns:
-        yield dict(asn=asn, prefixes=list(qr.routes_for_origin(f'AS{asn}')))
+        yield dict(asn=asn, prefixes=list(qr.routes_for_origin(f'AS{asn}', ip_version)))
 
 
 @ariadne.convert_kwargs_to_snake_case
